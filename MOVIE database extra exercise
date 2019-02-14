@@ -1,0 +1,110 @@
+You've started a new movie-rating website, and you've been collecting data on reviewers' ratings of various movies. There's not much data yet, but you can still try out some interesting queries. Here's the schema: 
+
+Movie ( mID, title, year, director ) 
+English: There is a movie with ID number mID, a title, a release year, and a director. 
+
+Reviewer ( rID, name ) 
+English: The reviewer with ID number rID has a certain name. 
+
+Rating ( rID, mID, stars, ratingDate ) 
+English: The reviewer rID gave the movie mID a number of stars rating (1-5) on a certain ratingDate. 
+
+Your queries will run over a small data set conforming to the schema. View the database. (You can also download the schema and data.) 
+--------------------------------------------------------------------------------------------------------------------------------------
+Find the names of all reviewers who rated Gone with the Wind. 
+
+select name from Reviewer where rid in (select rid from rating where mid in ( select mid from movie where title ='Gone with the Wind'))
+--------------------------------------------------------------------------------------------------------------------------------------
+For any rating where the reviewer is the same as the director of the movie, return the reviewer name, movie title, and number of stars. 
+
+SELECT R.NAME, M.TITLE, RT.STARS
+FROM RATING RT, REVIEWER R, MOVIE M
+WHERE RT.RID = R.RID
+AND R.NAME = M.DIRECTOR
+AND RT.MID = M.MID
+---------------------------------------------------------------------------------------------------------------------------------------
+Return all reviewer names and movie names together in a single list, alphabetized. 
+(Sorting by the first name of the reviewer and first word in the title is fine; no need for special processing on last names or removing "The".) 
+
+select name from reviewer union select title from movie
+order by name,title
+----------------------------------------------------------------------------------------------------------------------------------------
+Find the titles of all movies not reviewed by Chris Jackson. 
+
+select title from movie where mid not in ( select mid from rating where rid in ( select rid from reviewer where name='Chris Jackson'))
+----------------------------------------------------------------------------------------------------------------------------------------
+For all pairs of reviewers such that both reviewers gave a rating to the same movie, return the names of both reviewers. Eliminate duplicates, don't pair reviewers with themselves, and include each pair only once. For each pair, return the names in the pair in alphabetical order. 
+
+SELECT DISTINCT R1.NAME, R2.NAME
+FROM RATING RT_1, RATING RT_2, REVIEWER R1, REVIEWER R2
+WHERE RT_1.MID = RT_2.MID
+AND RT_1.RID <> RT_2.RID
+AND RT_1.RID = R1.RID
+AND RT_2.RID = R2.RID
+AND R1.NAME < R2.NAME
+--------------------------------------------------------------------------------------------------------------------------------------
+For each rating that is the lowest (fewest stars) currently in the database, return the reviewer name, movie title, and number of stars. 
+
+SELECT R.NAME, M.TITLE, RT.STARS
+FROM RATING RT, REVIEWER R, MOVIE M
+WHERE RT.RID = R.RID
+AND RT.MID = M.MID
+AND RT.STARS IN (
+SELECT MIN(STARS)
+FROM RATING)
+-------------------------------------------------------------------------------------------------------------------------------------
+List movie titles and average ratings, from highest-rated to lowest-rated. If two or more movies have the same average rating, list them in alphabetical order. 
+
+select title, avg(stars) as rate from movie,rating where rating.mid = movie.mid
+group by title
+order by rate desc,title asc
+-------------------------------------------------------------------------------------------------------------------------------------
+Find the names of all reviewers who have contributed three or more ratings. (As an extra challenge, try writing the query without HAVING or without COUNT.) 
+
+select name from reviewer, rating where reviewer.rid = rating.rid
+group by rating.rid
+having count(stars) >= 3
+---------------------------------------------------------------------------------------------------------------------------------------
+Some directors directed more than one movie. For all such directors, return the titles of all movies directed by them, along with the director name. Sort by director name, then movie title.
+
+SELECT TITLE, DIRECTOR
+FROM MOVIE
+WHERE DIRECTOR IN 
+(SELECT DIRECTOR FROM MOVIE 
+GROUP BY DIRECTOR
+HAVING COUNT(TITLE) > 1)
+ORDER BY DIRECTOR,TITLE 
+-------------------------------------------------------------------------------------------------------------------------------------
+Find the movie(s) with the highest average rating. Return the movie title(s) and average rating. (Hint: This query is more difficult to write in SQLite than other systems; you might think of it as finding the highest average rating and then choosing the movie(s) with that average rating.) 
+
+SELECT M.TITLE, AVG(R.STARS)
+FROM RATING R, MOVIE M
+WHERE M.MID = R.MID
+GROUP BY M.TITLE
+HAVING AVG(R.STARS) = 
+(SELECT MAX(AVG_RT)
+FROM (
+SELECT AVG(STARS) AVG_RT
+FROM RATING
+GROUP BY MID
+)
+)
+---------------------------------------------------------------------------------------------------------------------------------
+Find the movie(s) with the lowest average rating. Return the movie title(s) and average rating. (Hint: This query may be more difficult to write in SQLite than other systems; you might think of it as finding the lowest average rating and then choosing the movie(s) with that average rating.) 
+
+SELECT M.TITLE, AVG(R.STARS)
+FROM RATING R, MOVIE M
+WHERE M.MID = R.MID
+GROUP BY M.TITLE
+HAVING AVG(R.STARS) = 
+(SELECT MIN(AVG_RT)
+FROM (
+SELECT AVG(STARS) AVG_RT
+FROM RATING
+GROUP BY MID
+)
+)
+------------------------------------------------------------------------------------------------------------------------------------
+For each director, return the director's name together with the title(s) of the movie(s) they directed that received the highest rating among all of their movies, and the value of that rating. Ignore movies whose director is NULL. 
+
+SELECT DIRECTOR,TITLE, MAX(STARS) FROM RATING,MOVIE  GROUP BY DIRECTOR, RATING.MID HAVING RATING.MID=MOVIE.MID AND DIRECTOR IS NOT NULL
