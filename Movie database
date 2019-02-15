@@ -1,0 +1,84 @@
+Movie ( mID, title, year, director ) 
+English: There is a movie with ID number mID, a title, a release year, and a director. 
+
+Reviewer ( rID, name ) 
+English: The reviewer with ID number rID has a certain name. 
+
+Rating ( rID, mID, stars, ratingDate ) 
+English: The reviewer rID gave the movie mID a number of stars rating (1-5) on a certain ratingDate. 
+
+Your queries will run over a small data set conforming to the schema. View the database. (You can also download the schema and data.) 
+-------------------------------------------------------------------------------------------------------------------------------------------
+Find the titles of all movies directed by Steven Spielberg. 
+
+SELECT TITLE 
+FROM MOVIE
+WHERE DIRECTOR='Steven Spielberg'
+-------------------------------------------------------------------------------------------------------------------------------------------
+Find all years that have a movie that received a rating of 4 or 5, and sort them in increasing order. 
+
+SELECT DISTINCT(YEAR)
+FROM MOVIE,RATING 
+WHERE RATING.MID=MOVFind the titles of all movies that have no ratings.IE.MID AND STARS >= 4
+ORDER BY YEAR
+-------------------------------------------------------------------------------------------------------------------------------------------
+Find the titles of all movies that have no ratings.
+
+SELECT DISTINCT(TITLE)
+FROM MOVIE,RATING
+WHERE MOVIE.MID NOT IN (SELECT MID FROM RATING)
+-------------------------------------------------------------------------------------------------------------------------------------------
+Some reviewers didn't provide a date with their rating. Find the names of all reviewers who have ratings with a NULL value for the date. 
+
+SELECT NAME 
+FROM REVIEWER,RATING
+WHERE REVIEWER.RID=RATING.RID AND RATINGDATE IS NULL
+-------------------------------------------------------------------------------------------------------------------------------------------
+Write a query to return the ratings data in a more readable format: reviewer name, movie title, stars, and ratingDate. 
+Also, sort the data, first by reviewer name, then by movie title, and lastly by number of stars. 
+
+SELECT NAME,TITLE,STARS,RATINGDATE
+FROM REVIEWER,MOVIE,RATING
+WHERE RATING.RID = REVIEWER.RID AND RATING.MID=MOVIE.MID 
+ORDER BY NAME,TITLE,STARS
+----------------------------------------------------------------------------------------------------------------------------------------
+For all cases where the same reviewer rated the same movie twice and gave it a higher rating the second time, 
+return the reviewer's name and the title of the movie. 
+
+SELECT NAME,TITLE 
+FROM RATING R2 , RATING R1 ,REVIEWER,MOVIE
+WHERE R2.RID=R1.RID AND R2.MID=R1.MID AND R2.RATINGDATE > R1.RATINGDATE AND R2.STARS > R1.STARS
+AND REVIEWER.RID=R2.RID AND MOVIE.MID=R2.MID
+----------------------------------------------------------------------------------------------------------------------------------------
+For each movie that has at least one rating, find the highest number of stars that movie received. 
+Return the movie title and number of stars. Sort by movie title. 
+
+SELECT TITLE,R1.STARS
+FROM MOVIE,RATING R1
+where MOVIE.MID=R1.MID 
+GROUP BY TITLE
+HAVING R1.STARS IN (SELECT R1.STARS FROM RATING R2 WHERE R1.STARS > R2.STARS AND R1.MID = R2.MID)
+----------------------------------------------------------------------------------------------------------------------------------------
+For each movie, return the title and the 'rating spread', that is, the difference between highest and lowest ratings given to that movie. Sort by rating spread from highest to lowest, then by movie title. 
+
+SELECT DISTINCT(TITLE), MAX(STARS) - MIN(STARS) AS DIFF
+FROM MOVIE,RATING
+WHERE MOVIE.MID=RATING.MID
+GROUP BY TITLE
+ORDER BY DIFF DESC
+-------------------------------------------------------------------------------------------------------------------------------------------
+Find the difference between the average rating of movies released before 1980 and the average rating of movies released after 1980. 
+(Make sure to calculate the average rating for each movie, then the average of those averages for movies before 1980 and movies after.
+Don't just calculate the overall average rating before and after 1980.) 
+
+SELECT AVG(RT_L80 - RT_G80)
+FROM (SELECT AVG(STARS) RT_L80
+FROM MOVIE M, RATING R
+WHERE R.MID = M.MID
+AND M.YEAR < 1980
+GROUP BY M.MID) A, (
+SELECT AVG(STARS) RT_G80
+FROM MOVIE M, RATING R
+WHERE R.MID = M.MID
+AND M.YEAR > 1980
+GROUP BY M.MID) B
