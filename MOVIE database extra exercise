@@ -108,3 +108,29 @@ GROUP BY MID
 For each director, return the director's name together with the title(s) of the movie(s) they directed that received the highest rating among all of their movies, and the value of that rating. Ignore movies whose director is NULL. 
 
 SELECT DIRECTOR,TITLE, MAX(STARS) FROM RATING,MOVIE  GROUP BY DIRECTOR, RATING.MID HAVING RATING.MID=MOVIE.MID AND DIRECTOR IS NOT NULL
+-------------------------------------------------------------------------------------------------------------------------------------
+Add the reviewer Roger Ebert to your database, with an rID of 209. 
+
+INSERT INTO REVIEWER values(209,'Roger Ebert')
+--------------------------------------------------------------------------------------------------------------------------------------
+Insert 5-star ratings by James Cameron for all movies in the database. Leave the review date as NULL. 
+
+insert into Rating  ( rID, mID, stars, ratingDate )
+select Reviewer.rID , Movie.mID, 5, null from Movie
+left outer join Reviewer
+where Reviewer.name='James Cameron'
+--------------------------------------------------------------------------------------------------------------------------------------
+For all movies that have an average rating of 4 stars or higher, add 25 to the release year. (Update the existing tuples; don't insert new tuples.) 
+
+UPDATE MOVIE SET YEAR=YEAR+25 WHERE MID IN 
+(SELECT MID FROM
+(SELECT AVG(STARS), MID 
+FROM RATING
+GROUP BY MID
+HAVING AVG(STARS) >= 4))
+---------------------------------------------------------------------------------------------------------------------------------------
+Remove all ratings where the movie's year is before 1970 or after 2000, and the rating is fewer than 4 stars. 
+
+DELETE FROM RATING 
+WHERE MID IN (SELECT MID FROM MOVIE WHERE YEAR<1970 OR YEAR >2000) AND STARS < 4
+---------------------------------------------------------------------------------------------------------------------------------------
